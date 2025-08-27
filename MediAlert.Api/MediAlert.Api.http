@@ -1,0 +1,6 @@
+@MediAlert.Api_HostAddress = http://localhost:5218
+
+GET {{MediAlert.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
