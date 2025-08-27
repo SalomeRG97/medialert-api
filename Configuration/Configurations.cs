@@ -4,12 +4,15 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using Model;
 using Model.Data;
 using Model.Identity;
 using Repository.Base;
+using Service.Auth;
 using Services.ErrorResponse;
 using System.Text;
 
@@ -23,11 +26,10 @@ namespace Configuration
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddFluentValidationAutoValidation();
-            //builder.Services.AddJwtAuthentication(builder.Configuration);
+            builder.Services.AddScoped<JwtService>();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddHttpClient();
-            // Registro de FluentValidation y validadores
             builder.Services.AddControllers()
                 .ConfigureApiBehaviorOptions(options =>
                 {
@@ -60,14 +62,22 @@ namespace Configuration
             {
                 options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
             });
-
+            builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings")
+);
         }
 
         public static void ConfigureAuth(WebApplicationBuilder builder)
         {
-            var config = builder.Configuration;
-            var key = Encoding.UTF8.GetBytes(config["JwtSettings:SecretKey"]);
-            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey));
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
@@ -75,13 +85,13 @@ namespace Configuration
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = config["JwtSettings:Issuer"],
-                    ValidAudience = config["JwtSettings:Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(key)
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
+                    IssuerSigningKey = key
                 };
             });
-            builder.Services.AddAuthorization();
         }
+
 
         public static void AllowCORS(WebApplicationBuilder builder)
         {

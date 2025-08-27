@@ -1,5 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using Model.Models;
+using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
 
 namespace Model.Data;
 
@@ -18,9 +21,13 @@ public partial class MedsAppContext : DbContext
 
     public virtual DbSet<Medication> Medications { get; set; }
 
+    public virtual DbSet<Role> Roles { get; set; }
+
     public virtual DbSet<Schedule> Schedules { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<UserRole> UserRoles { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -68,6 +75,15 @@ public partial class MedsAppContext : DbContext
                 .HasConstraintName("FK_Medications_Users");
         });
 
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.Property(e => e.Name)
+                .HasMaxLength(100)
+                .HasDefaultValueSql("'0'");
+        });
+
         modelBuilder.Entity<Schedule>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
@@ -99,6 +115,25 @@ public partial class MedsAppContext : DbContext
             entity.Property(e => e.Timezone)
                 .HasMaxLength(50)
                 .HasDefaultValueSql("'America/Bogota'");
+        });
+
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.HasIndex(e => e.RoleId, "RoleId");
+
+            entity.HasIndex(e => e.UserId, "UserId");
+
+            entity.HasOne(d => d.Role).WithMany(p => p.UserRoles)
+                .HasForeignKey(d => d.RoleId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Roles");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserRoles)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Users");
         });
 
         OnModelCreatingPartial(modelBuilder);

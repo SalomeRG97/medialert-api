@@ -18,4 +18,6 @@ public partial class User
     public DateOnly CreatedAt { get; set; }
 
     public virtual ICollection<Medication> Medications { get; set; } = new List<Medication>();
+
+    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }

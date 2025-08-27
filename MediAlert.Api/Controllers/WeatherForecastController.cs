@@ -1,7 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MediAlert.Api.Controllers
 {
+    [Authorize]
+    //[Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin,Manager")]
     [ApiController]
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase
